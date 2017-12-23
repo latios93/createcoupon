@@ -32,7 +32,7 @@ class CreateCoupon extends Module
             $this->tab = 'advertising_marketing';
             $this->version = '1.1.1';
             $this->bootstrap = true;
-            $this->author = 'Latios93';
+            $this->author = 'Luca Ioffredo';
             $this->need_instance = 0;		
             parent::__construct(); 
             $this->displayName = $this->l('Create Coupon');
