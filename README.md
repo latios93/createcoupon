@@ -1,8 +1,4 @@
 # createcoupon
----------- English ----------
-
-Prestashop's module. Create a coupons's list automatically to distribuite to your customers
-
 
 ---------- Italiano ----------
 
