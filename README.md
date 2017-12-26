@@ -10,4 +10,4 @@ I coupon creati possono essere personalizzati in base a prezzo, periodo di valid
 Testato e funzionante su:
 -Prestashop 1.6 e 1.7 
 
-Secondo il validator di Prestashop, dovrebbe andare bene anche su 1.5 e 1.7. Sarebbe da testare su queste due versioni.
+Secondo il validator di Prestashop, dovrebbe andare bene anche su 1.5. Sarebbe da testare su questa versione.
