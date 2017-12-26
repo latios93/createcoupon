@@ -43,9 +43,14 @@ class CreateCoupon extends Module
 		
 	public function install()
 	{
+            $hookdefault = 'displayBackOfficeHeader';
+//            if ( _PS_VERSION_ >= '1.7')
+//            {
+//                $hookdefault = 'displayBackOfficeCategory';
+//            }
             /* If a secure key doesn't exists then I create it. This prevent execution strange of the cron */  
             return (parent::install() && $this->CreateTabs()
-                    && $this->registerHook('displayBackOfficeHeader') 
+                    && $this->registerHook($hookdefault) 
 //                    && $this->registerHook('displayHeader')
 //                    && $this->registerHook('displayAdminOrder')
                     && $this->installDB() 
@@ -54,6 +59,11 @@ class CreateCoupon extends Module
         
         public function uninstall()
 	{ 
+            $hookdefault = 'displayBackOfficeHeader';
+//            if ( _PS_VERSION_ >= '1.7')
+//            {
+//                $hookdefault = 'displayBackOfficeCategory';
+//            }
             $idtabs = array();
             $idtabs[] = Tab::getIdFromClassName("AdminCreateCoupon");
             foreach ($idtabs as $tabid):
@@ -63,7 +73,7 @@ class CreateCoupon extends Module
                 }
             endforeach;
             if (!parent::uninstall() 
-//                    || !$this->unregisterHook('displayBackOfficeHeader') 
+                    || !$this->unregisterHook($hookdefault) 
 //                    || !$this->unregisterHook('displayHeader')
 //                    || !$this->unregisterHook('displayAdminOrder')
                     || !$this->uninstallDB() 
@@ -142,7 +152,16 @@ class CreateCoupon extends Module
             $this->context->controller->addCss($this->_path.'views/css/tab.css');
             $this->context->controller->addJs($this->_path.'views/js/createcoupon.js');
 	}
-        
+     
+	public function l($string, $class = null, $addslashes = false, $htmlentities = true)
+    {
+        if ( _PS_VERSION_ >= '1.7') {
+            return Context::getContext()->getTranslator()->trans($string);
+        } else {
+            return parent::l($string, $class, $addslashes, $htmlentities);
+        }
+    }
+	 
         public function hookDisplayHeader()
 	{ 
             

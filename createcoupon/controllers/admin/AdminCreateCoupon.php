@@ -23,7 +23,7 @@ require_once (dirname(__FILE__) . '/../../classes/HTMLTemplateCreateCouponPDF.ph
 class AdminCreateCouponController extends AdminController {
 
 
-  public function __construct() {
+    public function __construct() {
         $this->name = "createcoupon";
       	$this->table = 'createcoupon';
         $this->className = 'Campaign';
@@ -82,6 +82,15 @@ class AdminCreateCouponController extends AdminController {
         parent::initToolbar();
     }
      
+    protected function l($string, $class = null, $addslashes = false, $htmlentities = true)
+    {
+        if ( _PS_VERSION_ >= '1.7') {
+            return Context::getContext()->getTranslator()->trans($string);
+        } else {
+            return parent::l($string, $class, $addslashes, $htmlentities);
+        }
+    }
+    
     public function getConfigFormValues()
     {
         return array(
@@ -92,16 +101,18 @@ class AdminCreateCouponController extends AdminController {
             'quantity_per_user' => 1,
             'cart_rule_restriction' => true,
             'voucher_amount' => 10,
+            'voucher_day' => 365,
             'minimal_order' => 0
         ); 
     }
-	
+
     public function renderForm() {
     
     	$id_lang = (int) Context::getContext()->language->id;
     	$categories = Category::getSimpleCategories($id_lang);
-    	
-        $this->fields_form = array(
+        
+    	$helper = new HelperForm();
+        $fields_form[0]['form'] = array(
             'legend' => array(
                 'title' => $this->l('Settings'),
             ),
@@ -206,33 +217,32 @@ class AdminCreateCouponController extends AdminController {
                 'class' => 'btn btn-default pull-right'
             )
         );
- 
+        
         // Module, token and currentIndex 
-        $this->name_controller = $this->name;  
+        $helper->name_controller = $this->name;  
         // Language
-        $this->default_form_language = (int)Configuration::get('PS_LANG_DEFAULT');
-        $this->allow_employee_form_lang = (int)Configuration::get('PS_LANG_DEFAULT');
+        $helper->default_form_language = (int)Configuration::get('PS_LANG_DEFAULT');
+        $helper->allow_employee_form_lang = (int)Configuration::get('PS_LANG_DEFAULT');
         // Title and toolbar
-        $this->title = $this->l('Create Coupon');
-        $this->show_toolbar = true;        // false -> remove toolbar
-        $this->toolbar_scroll = true;      // yes - > Toolbar is always visible on the top of the screen.
-        $this->submit_action = 'submit'.$this->name;
+        $helper->title = $this->l('Create Coupon');
+        $helper->show_toolbar = true;        // false -> remove toolbar
+        $helper->toolbar_scroll = true;      // yes - > Toolbar is always visible on the top of the screen.
+        $helper->submit_action = 'submit'.$this->name;
         
         // Load current value
-        $this->fields_value = $this->getConfigFormValues(); 
+        $helper->fields_value = $this->getConfigFormValues(); 
         if (Shop::isFeatureActive()) {
-            $this->fields_form['input'][] = array(
+            $helper->fields_form['input'][] = array(
                 'type' => 'shop',
                 'label' => $this->l('Shop association:'),
                 'name' => 'checkBoxShopAssociation',
             );
         }
-        if (!($BlogCategory = $this->loadObject(true)))
-            return;         
-        return parent::renderForm();
+        
+        return $helper->generateForm($fields_form);
+        
+//        return parent::renderForm();
     }
-    
-    
     
     public function postProcess() 
     {
@@ -245,29 +255,16 @@ class AdminCreateCouponController extends AdminController {
         }
         elseif (Tools::isSubmit('submitReset'.$this->name.'_history_list'))
         { 
-            $filters = $this->context->cookie->getFamily($this->name.'_history_list'.'Filter_');
-            foreach ($filters AS $cookieKey => $filter)
-                if (strncmp($cookieKey, $this->name.'_history_list'.'Filter_', 7 + Tools::strlen($this->name.'_history_list')) == 0)
-                {
-                    $key = Tools::substr($cookieKey, 7 + Tools::strlen($this->name.'_history_list'));
-                    $tmpTab = explode('!', $key);
-                    $key = (count($tmpTab) > 1 ? $tmpTab[1] : $tmpTab[0]);
-                    if (array_key_exists($key, $this->fieldsDisplay))
-                        unset($this->context->cookie->$cookieKey);
-                }
-            if (isset($this->context->cookie->{'submitFilter'.$this->name.'_history_list'}))
-                    unset($this->context->cookie->{'submitFilter'.$this->name.'_history_list'});
-            if (isset($this->context->cookie->{$this->name.'_history_list'.'Orderby'}))
-                    unset($this->context->cookie->{$this->name.'_history_list'.'Orderby'});
-            if (isset($this->context->cookie->{$this->name.'_history_list'.'Orderway'}))
-                    unset($this->context->cookie->{$this->name.'_history_list'.'Orderway'});
-            unset($_POST);
+            $this->deleteFormSearch();
         }
         //Create coupon's list!
         if (Tools::isSubmit('submitcreatecoupon')) {
-            parent::validateRules();
-            if (count($this->errors))
-                return false; 
+            if ( _PS_VERSION_ <= '1.6')
+            {
+                parent::validateRules();
+                if (count($this->errors))
+                    return false; 
+            }  
             $campaign = new CreateCouponCampaign();
             $campaign->name = Tools::getValue('name'); 
             $campaign->name = $campaign->name!==false ? trim($campaign->name) : $campaign->name;
@@ -498,8 +495,8 @@ class AdminCreateCouponController extends AdminController {
     public function renderHistoryList()
     { 
         $module = new CreateCoupon();
-        $page = $this->getPage();
-        $perPage = $this->getRowsPerPage(); 
+        $page = $this->getPage("_history_list");
+        $perPage = $this->getRowsPerPage(false,"_history_list"); 
         $conditions = "";
         $order_by = "id_createcoupon_campaign DESC";
         $order_way = "DESC";
@@ -548,7 +545,7 @@ class AdminCreateCouponController extends AdminController {
         $helper->orderWay = $order_way;
         $helper->token = Tools::getAdminTokenLite('AdminCreateCoupon');
         $helper->currentIndex = AdminController::$currentIndex;
-        $historyList = $this->paginate_content($historyList, $page, $perPage); 
+        $historyList = $this->paginate_content($historyList, $page, $perPage);         
         return $helper->generateList($historyList, $fields_list);
     }
 
@@ -578,14 +575,12 @@ class AdminCreateCouponController extends AdminController {
             if (isset($this->context->cookie->{'submitFilter'.$tableName})) {
                 return (int)$this->context->cookie->{'submitFilter'.$tableName};
             }
-            else {
-                // Page was not set so we return 1
-                return 1;
-            }
         }
+        // Page was not set so we return 1
+        return 1;
     }
 
-    public function getRowsPerPage($default=false)
+    public function getRowsPerPage($default=false, $table=false)
     {
         $tableName = $this->name;
 
@@ -593,12 +588,16 @@ class AdminCreateCouponController extends AdminController {
         if (Tools::getIsset($tableName. '_pagination')) 
         {
             return (int)Tools::getValue($tableName. '_pagination');
-        } else // Check if number of rows is stored in cookie and return it
-        if (isset($this->context->cookie->{$tableName. '_pagination'})) 
+        } 
+        elseif (isset($this->context->cookie->{$tableName. '_pagination'})) // Check if number of rows is stored in cookie and return it
         {
             return (int)$this->context->cookie->{$tableName. '_pagination'};
-        } else 
-        if ($default!==false && (int) $default > 0)
+        }
+        elseif ($table!==false && Tools::getIsset($tableName. $table . '_pagination'))
+        {
+            return (int)Tools::getValue($tableName. $table . '_pagination');
+        }
+        elseif ($default!==false && (int) $default > 0)
         {
            return $default;
         }
@@ -779,6 +778,27 @@ class AdminCreateCouponController extends AdminController {
         return $helper->generateList($historyList, $fields_list);
     }        
 
+    public function deleteFormSearch()
+    {
+        $filters = $this->context->cookie->getFamily($this->name.'_history_list'.'Filter_');
+        foreach ($filters AS $cookieKey => $filter)
+            if (strncmp($cookieKey, $this->name.'_history_list'.'Filter_', 7 + Tools::strlen($this->name.'_history_list')) == 0)
+            {
+                $key = Tools::substr($cookieKey, 7 + Tools::strlen($this->name.'_history_list'));
+                $tmpTab = explode('!', $key);
+                $key = (count($tmpTab) > 1 ? $tmpTab[1] : $tmpTab[0]);
+                if (array_key_exists($key, $this->fieldsDisplay))
+                    unset($this->context->cookie->$cookieKey);
+            }
+        if (isset($this->context->cookie->{'submitFilter'.$this->name.'_history_list'}))
+                unset($this->context->cookie->{'submitFilter'.$this->name.'_history_list'});
+        if (isset($this->context->cookie->{$this->name.'_history_list'.'Orderby'}))
+                unset($this->context->cookie->{$this->name.'_history_list'.'Orderby'});
+        if (isset($this->context->cookie->{$this->name.'_history_list'.'Orderway'}))
+                unset($this->context->cookie->{$this->name.'_history_list'.'Orderway'});
+        unset($_POST);        
+    }
+    
     public function printCampaign($id)
     {
         return 
