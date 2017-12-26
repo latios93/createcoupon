@@ -2,7 +2,7 @@
 <module>
 	<name>createcoupon</name>
 	<displayName><![CDATA[Create Coupon]]></displayName>
-	<version><![CDATA[1.1.1]]></version>
+	<version><![CDATA[1.2]]></version>
 	<description><![CDATA[Create a coupons's list automatically to distribuite to your customers]]></description>
 	<author><![CDATA[Luca Ioffredo]]></author>
 	<!--<tab><![CDATA[pricing_promotion]]></tab>-->
